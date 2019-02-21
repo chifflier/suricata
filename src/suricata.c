@@ -2859,7 +2859,7 @@ static void SuricataMainLoop(SCInstance *suri)
         TmThreadCheckThreadState();
 
         if (sighup_count > 0) {
-            OutputNotifyFileRotation();
+            OutputExecuteRotationCtx();
             sighup_count--;
         }
 

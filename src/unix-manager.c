@@ -920,7 +920,7 @@ static TmEcode UnixManagerListCommand(json_t *cmd,
 
 static TmEcode UnixManagerReopenLogFiles(json_t *cmd, json_t *server_msg, void *data)
 {
-    OutputNotifyFileRotation();
+    OutputExecuteRotationCtx();
     json_object_set_new(server_msg, "message", json_string("done"));
     SCReturnInt(TM_ECODE_OK);
 }

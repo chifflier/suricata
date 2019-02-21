@@ -535,6 +535,16 @@ static int SCLogReopen(SCLogOPIfaceCtx *op_iface_ctx)
 }
 
 /**
+ * \brief Registered rotation function for SCLogOPIfaceCtx
+ *
+ * \param output_ctx SCLogOPIfaceCtx
+ */
+static void SCLogReopenFile(void *output_ctx)
+{
+	SCLogReopen(output_ctx);
+}
+
+/**
  * \brief Adds the global log_format to the outgoing buffer
  *
  * \param log_level log_level of the message that has to be logged
@@ -588,20 +598,9 @@ SCError SCLogMessage(const SCLogLevel log_level, const char *file,
                                           log_level, file, line, function,
                                           error_code, message) == 0)
                 {
-                    int r = 0;
                     SCMutexLock(&op_iface_ctx->fp_mutex);
-                    if (op_iface_ctx->rotation_flag) {
-                        r = SCLogReopen(op_iface_ctx);
-                        op_iface_ctx->rotation_flag = 0;
-                    }
                     SCLogPrintToStream(op_iface_ctx->file_d, buffer);
                     SCMutexUnlock(&op_iface_ctx->fp_mutex);
-
-                    /* report error outside of lock to avoid recursion */
-                    if (r == -1) {
-                        SCLogError(SC_ERR_FOPEN, "re-opening file \"%s\" failed: %s",
-                                op_iface_ctx->file, strerror(errno));
-                    }
                 }
                 break;
             case SC_LOG_OP_IFACE_SYSLOG:
@@ -735,8 +734,7 @@ static inline SCLogOPIfaceCtx *SCLogInitFileOPIface(const char *file,
     }
 
     SCMutexInit(&iface_ctx->fp_mutex, NULL);
-    OutputRegisterFileRotationFlag(&iface_ctx->rotation_flag);
-
+    OutputRegisterRotationCtx(iface_ctx, SCLogReopenFile, &iface_ctx->fp_mutex);
     iface_ctx->log_level = log_level;
 
     return iface_ctx;

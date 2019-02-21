@@ -245,14 +245,14 @@ void Unified2AlertRegister(void)
 /**
  *  \brief Function to close unified2 file
  *
- *  \param aun Unified2 thread variable.
+ *  \param file_ctx Log file context.
  */
-static int Unified2AlertCloseFile(Unified2AlertThread *aun)
+static int Unified2AlertCloseFile(LogFileCtx *file_ctx)
 {
-    if (aun->unified2alert_ctx->file_ctx->fp != NULL) {
-        fclose(aun->unified2alert_ctx->file_ctx->fp);
+    if (file_ctx->fp != NULL) {
+        fclose(file_ctx->fp);
     }
-    aun->unified2alert_ctx->file_ctx->size_current = 0;
+    file_ctx->size_current = 0;
 
     return 0;
 }
@@ -260,24 +260,33 @@ static int Unified2AlertCloseFile(Unified2AlertThread *aun)
 /**
  *  \brief Function to rotate unified2 file
  *
- *  \param aun Unified2 thread variable.
+ *  \param file_ctx Log file context.
  *  \retval 0 on succces
  *  \retval -1 on failure
  */
-static int Unified2AlertRotateFile(Unified2AlertThread *aun, bool truncate)
+static int Unified2AlertRotateFile(LogFileCtx *file_ctx, bool truncate)
 {
-    if (Unified2AlertCloseFile(aun) < 0) {
+    if (Unified2AlertCloseFile(file_ctx) < 0) {
         SCLogError(SC_ERR_UNIFIED2_ALERT_GENERIC,
                    "Error: Unified2AlertCloseFile failed");
         return -1;
     }
-    if (Unified2AlertOpenFileCtx(aun->unified2alert_ctx->file_ctx,
-            aun->unified2alert_ctx->file_ctx->prefix, truncate) < 0) {
+    if (Unified2AlertOpenFileCtx(file_ctx, file_ctx->prefix, truncate) < 0) {
         SCLogError(SC_ERR_UNIFIED2_ALERT_GENERIC,
                    "Error: Unified2AlertOpenFileCtx, open new log file failed");
         return -1;
     }
     return 0;
+}
+
+/**
+ * \brief Registered rotation function for unified2
+ *
+ * \param output_ctx Log file context.
+ */
+static void Unified2AlertReopenFile(void *output_ctx)
+{
+    Unified2AlertRotateFile(output_ctx, false);
 }
 
 /**
@@ -955,12 +964,11 @@ static int Unified2IPv6TypeAlert(ThreadVars *t, const Packet *p, void *data)
 
         bool truncate = (file_ctx->size_current + length) > file_ctx->size_limit
             ? true : false;
-        if (truncate || file_ctx->rotation_flag) {
-            if (Unified2AlertRotateFile(aun, truncate) < 0) {
+        if (truncate) {
+            if (Unified2AlertRotateFile(aun->unified2alert_ctx->file_ctx, truncate) < 0) {
                 SCMutexUnlock(&file_ctx->fp_mutex);
                 return -1;
             }
-            file_ctx->rotation_flag = 0;
         }
 
         if (Unified2Write(aun) != 1) {
@@ -1144,12 +1152,11 @@ static int Unified2IPv4TypeAlert (ThreadVars *tv, const Packet *p, void *data)
 
         bool truncate = (file_ctx->size_current + length) > file_ctx->size_limit
             ? true : false;
-        if (truncate || file_ctx->rotation_flag) {
-            if (Unified2AlertRotateFile(aun, truncate) < 0) {
+        if (truncate) {
+            if (Unified2AlertRotateFile(aun->unified2alert_ctx->file_ctx, truncate) < 0) {
                 SCMutexUnlock(&file_ctx->fp_mutex);
                 return -1;
             }
-            file_ctx->rotation_flag = 0;
         }
 
         if (Unified2Write(aun) != 1) {
@@ -1362,7 +1369,7 @@ OutputInitResult Unified2AlertInitCtx(ConfNode *conf)
 
     /* Only register for file rotation if theout is non-timestamped. */
     if (nostamp) {
-        OutputRegisterFileRotationFlag(&file_ctx->rotation_flag);
+        OutputRegisterRotationCtx(file_ctx, Unified2AlertReopenFile, &file_ctx->fp_mutex);
     }
 
     output_ctx = SCCalloc(1, sizeof(OutputCtx));
@@ -1995,7 +2002,7 @@ static int Unified2TestRotate01(void)
 
     TimeSetIncrementTime(1);
 
-    ret = Unified2AlertRotateFile(data, false);
+    ret = Unified2AlertRotateFile(((Unified2AlertThread*)data)->unified2alert_ctx->file_ctx, false);
     if (ret == -1)
         goto error;
 

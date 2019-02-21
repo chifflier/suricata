@@ -106,16 +106,18 @@ typedef TAILQ_HEAD(LoggerThreadStore_, LoggerThreadStoreNode_) LoggerThreadStore
 OutputModuleList output_modules = TAILQ_HEAD_INITIALIZER(output_modules);
 
 /**
- * Registry of flags to be updated on file rotation notification.
+ * Registry of reopen contexts to be called on file rotation notification.
  */
-typedef struct OutputFileRolloverFlag_ {
-    int *flag;
+typedef struct OutputRotationCtx_ {
+    void *output_ctx;
+    OutputReopenFunc OutputReopen;
+    SCMutex *output_mutex;
 
-    TAILQ_ENTRY(OutputFileRolloverFlag_) entries;
-} OutputFileRolloverFlag;
+    TAILQ_ENTRY(OutputRotationCtx_) entries;
+} OutputRotationCtx;
 
-TAILQ_HEAD(, OutputFileRolloverFlag_) output_file_rotation_flags =
-    TAILQ_HEAD_INITIALIZER(output_file_rotation_flags);
+TAILQ_HEAD(, OutputRotationCtx_) output_reopen_ctx =
+    TAILQ_HEAD_INITIALIZER(output_reopen_ctx);
 
 void OutputRegisterRootLoggers(void);
 void OutputRegisterLoggers(void);
@@ -860,41 +862,44 @@ void OutputDropLoggerDisable(void)
 }
 
 /**
- * \brief Register a flag for file rotation notification.
+ * \brief Register a reopen context for file rotation.
  *
- * \param flag A pointer that will be set to 1 when file rotation is
- *   requested.
+ * \param output_ctx Output context.
+ * \param OutputReopen Function to call.
+ * \param output_mutex Optional output mutex
  */
-void OutputRegisterFileRotationFlag(int *flag)
+void OutputRegisterRotationCtx(void *output_ctx, OutputReopenFunc OutputReopen, SCMutex *output_mutex)
 {
-    OutputFileRolloverFlag *flag_entry = SCCalloc(1, sizeof(*flag_entry));
-    if (unlikely(flag_entry == NULL)) {
+    OutputRotationCtx *entry = SCCalloc(1, sizeof(*entry));
+    if (unlikely(entry == NULL)) {
         SCLogError(SC_ERR_MEM_ALLOC,
-            "Failed to allocate memory to register file rotation flag");
+            "Failed to allocate memory to register output reopen context");
         return;
     }
-    flag_entry->flag = flag;
-    TAILQ_INSERT_TAIL(&output_file_rotation_flags, flag_entry, entries);
+    entry->output_ctx = output_ctx;
+    entry->OutputReopen = OutputReopen;
+    entry->output_mutex = output_mutex;
+
+    TAILQ_INSERT_TAIL(&output_reopen_ctx, entry, entries);
 }
 
 /**
- * \brief Unregister a file rotation flag.
+ * \brief Unregister a reopen context.
  *
- * Note that it is safe to call this function with a flag that may not
+ * Note that it is safe to call this function with a output context that may not
  * have been registered, in which case this function won't do
  * anything.
  *
- * \param flag A pointer that has been previously registered for file
- *   rotation notifications.
+ * \param output_ctx output context to unregister.
  */
-void OutputUnregisterFileRotationFlag(int *flag)
+void OutputUnregisterRotationCtx(void *output_ctx)
 {
-    OutputFileRolloverFlag *entry, *next;
-    for (entry = TAILQ_FIRST(&output_file_rotation_flags); entry != NULL;
+    OutputRotationCtx *entry, *next;
+    for (entry = TAILQ_FIRST(&output_reopen_ctx); entry != NULL;
          entry = next) {
         next = TAILQ_NEXT(entry, entries);
-        if (entry->flag == flag) {
-            TAILQ_REMOVE(&output_file_rotation_flags, entry, entries);
+        if (entry->output_ctx == output_ctx) {
+            TAILQ_REMOVE(&output_reopen_ctx, entry, entries);
             SCFree(entry);
             break;
         }
@@ -902,12 +907,20 @@ void OutputUnregisterFileRotationFlag(int *flag)
 }
 
 /**
- * \brief Notifies all registered file rotation notification flags.
+ * \brief Execute rotation for all registered reopen contexts.
  */
-void OutputNotifyFileRotation(void) {
-    OutputFileRolloverFlag *flag;
-    TAILQ_FOREACH(flag, &output_file_rotation_flags, entries) {
-        *(flag->flag) = 1;
+void OutputExecuteRotationCtx(void) {
+    OutputRotationCtx *entry;
+    TAILQ_FOREACH(entry, &output_reopen_ctx, entries) {
+        if (entry->output_mutex) {
+            SCMutexLock(entry->output_mutex);
+        }
+
+        entry->OutputReopen(entry->output_ctx);
+
+        if (entry->output_mutex) {
+            SCMutexUnlock(entry->output_mutex);
+        }
     }
 }
 

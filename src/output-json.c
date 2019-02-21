@@ -933,7 +933,6 @@ OutputInitResult OutputJsonInitCtx(ConfNode *conf)
                 SCFree(output_ctx);
                 return result;
             }
-            OutputRegisterFileRotationFlag(&json_ctx->file_ctx->rotation_flag);
         }
 #ifndef OS_WIN32
 	else if (json_ctx->json_out == LOGFILE_TYPE_SYSLOG) {

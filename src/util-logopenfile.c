@@ -196,13 +196,6 @@ static int SCLogFileWrite(const char *buffer, int buffer_len, LogFileCtx *log_ct
     } else
 #endif
     {
-
-        /* Check for rotation. */
-        if (log_ctx->rotation_flag) {
-            log_ctx->rotation_flag = 0;
-            SCConfLogReopen(log_ctx);
-        }
-
         if (log_ctx->flags & LOGFILE_ROTATE_INTERVAL) {
             time_t now = time(NULL);
             if (now >= log_ctx->rotate_time) {
@@ -312,6 +305,16 @@ static PcieFile *SCLogOpenPcieFp(LogFileCtx *log_ctx, const char *path,
 #else
     return TileOpenPcieFp(log_ctx, path, append_setting);
 #endif
+}
+
+/**
+ * \brief Registered rotation function for LogFileCtx
+ *
+ * \param output_ctx LogFileCtx
+ */
+static void SCConfLogReopenFile(void *output_ctx)
+{
+    SCConfLogReopen(output_ctx);
 }
 
 /** \brief open a generic output "log file", which may be a regular file or a socket
@@ -461,7 +464,7 @@ SCConfLogOpenGeneric(ConfNode *conf,
             return -1; // Error already logged by Open...Fp routine
         log_ctx->is_regular = 1;
         if (rotate) {
-            OutputRegisterFileRotationFlag(&log_ctx->rotation_flag);
+            OutputRegisterRotationCtx(log_ctx, SCConfLogReopenFile, &log_ctx->fp_mutex);
         }
     } else if (strcasecmp(filetype, "pcie") == 0) {
         log_ctx->pcie_fp = SCLogOpenPcieFp(log_ctx, log_path, append);
@@ -586,7 +589,7 @@ int LogFileFreeCtx(LogFileCtx *lf_ctx)
     if (lf_ctx->sensor_name)
         SCFree(lf_ctx->sensor_name);
 
-    OutputUnregisterFileRotationFlag(&lf_ctx->rotation_flag);
+    OutputUnregisterRotationCtx(lf_ctx);
 
     SCFree(lf_ctx);
 

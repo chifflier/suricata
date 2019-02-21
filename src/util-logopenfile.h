@@ -119,9 +119,6 @@ typedef struct LogFileCtx_ {
     /* JSON flags */
     size_t json_flags;  /* passed to json_dump_callback() */
 
-    /* Flag set when file rotation notification is received. */
-    int rotation_flag;
-
     /* Set to true if the filename should not be timestamped. */
     bool nostamp;
 

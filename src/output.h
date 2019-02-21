@@ -46,6 +46,7 @@ typedef struct OutputInitResult_ {
 typedef OutputInitResult (*OutputInitFunc)(ConfNode *);
 typedef OutputInitResult (*OutputInitSubFunc)(ConfNode *, OutputCtx *);
 typedef TmEcode (*OutputLogFunc)(ThreadVars *, Packet *, void *);
+typedef void (*OutputReopenFunc)(void *);
 
 typedef struct OutputModule_ {
     LoggerId logger_id;
@@ -189,9 +190,10 @@ void OutputDeregisterAll(void);
 int OutputDropLoggerEnable(void);
 void OutputDropLoggerDisable(void);
 
-void OutputRegisterFileRotationFlag(int *flag);
-void OutputUnregisterFileRotationFlag(int *flag);
-void OutputNotifyFileRotation(void);
+void OutputRegisterRotationCtx(void *output_ctx, OutputReopenFunc OutputReopen,
+    SCMutex *output_mutex);
+void OutputExecuteRotationCtx(void);
+void OutputUnregisterRotationCtx(void *output_ctx);
 
 void OutputRegisterRootLogger(ThreadInitFunc ThreadInit,
     ThreadDeinitFunc ThreadDeinit,
