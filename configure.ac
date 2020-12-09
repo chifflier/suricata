@@ -2245,6 +2245,16 @@
         LIBS="$TMPLIBS"
     fi
 
+  # wasm
+    AC_ARG_ENABLE(wasm,
+	        AS_HELP_STRING([--enable-wasm],[Enable Wasm support]),
+	        [ enable_wasm="$enableval"],
+	        [ enable_wasm="no"])
+    if test "$enable_wasm" = "yes"; then
+            AC_DEFINE([HAVE_WASM],[1],[Enable WASM support])
+    fi
+    AM_CONDITIONAL([HAVE_WASM], [test "x$enable_wasm" != "xno"])
+
   # libmaxminddb
     AC_ARG_ENABLE(geoip,
 	        AS_HELP_STRING([--enable-geoip],[Enable GeoIP2 support]),
@@ -2817,6 +2827,7 @@ SURICATA_BUILD_CONF="Suricata Configuration:
   PCRE jit:                                ${pcre_jit_available}
   LUA support:                             ${enable_lua}
   libluajit:                               ${enable_luajit}
+  WASM support:                            ${enable_wasm}
   GeoIP2 support:                          ${enable_geoip}
   Non-bundled htp:                         ${enable_non_bundled_htp}
   Hyperscan support:                       ${enable_hyperscan}
