@@ -65,6 +65,9 @@ tab_width = 4
 # default: "auto"
 documentation_style = "doxy"
 
+[defines]
+"feature = wasm" = "HAVE_WASM"
+"feature = lua" = "HAVE_LUA"
 
 [export]
 # A list of additional items to always include in the generated bindings if they're
