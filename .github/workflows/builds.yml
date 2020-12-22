@@ -702,6 +702,70 @@ jobs:
             exit 0
           fi
 
+  ubuntu-20-04-wasm:
+    name: Ubuntu 20.04 (wasm)
+    runs-on: ubuntu-latest
+    container: ubuntu:20.04
+    needs: [prepare-deps, prepare-cbindgen]
+    steps:
+      - name: Install dependencies
+        run: |
+          apt update
+          apt -y install \
+                libpcre3 \
+                libpcre3-dev \
+                build-essential \
+                autoconf \
+                automake \
+                git \
+                jq \
+                libtool \
+                libpcap-dev \
+                libnet1-dev \
+                libyaml-0-2 \
+                libyaml-dev \
+                libcap-ng-dev \
+                libcap-ng0 \
+                libmagic-dev \
+                libnetfilter-queue-dev \
+                libnetfilter-queue1 \
+                libnfnetlink-dev \
+                libnfnetlink0 \
+                libhiredis-dev \
+                libjansson-dev \
+                libevent-dev \
+                libevent-pthreads-2.1-7 \
+                libjansson-dev \
+                libpython2.7 \
+                make \
+                parallel \
+                python3-yaml \
+                rustc \
+                software-properties-common \
+                zlib1g \
+                zlib1g-dev \
+                exuberant-ctags
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: prep
+          path: prep
+      - run: tar xf prep/libhtp.tar.gz
+      - name: Setup cbindgen
+        run: |
+          mkdir -p $HOME/.cargo/bin
+          cp prep/cbindgen $HOME/.cargo/bin
+          chmod 755 $HOME/.cargo/bin/cbindgen
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - run: ./autogen.sh
+      - run: CFLAGS="${DEFAULT_CFLAGS}" ./configure --enable-unittests --enable-wasm
+      - run: make -j2
+      - run: make dist
+      - name: Extracting suricata-verify
+        run: tar xf prep/suricata-verify.tar.gz
+      - name: Running suricata-verify
+        run: python3 ./suricata-verify/run.py
+
   ubuntu-18-04-debug-validation:
     name: Ubuntu 18.04 (Debug Validation)
     runs-on: ubuntu-18.04
