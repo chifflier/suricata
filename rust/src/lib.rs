@@ -60,6 +60,9 @@ pub mod kerberos;
 #[cfg(feature = "lua")]
 pub mod lua;
 
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
 pub mod dns;
 pub mod nfs;
 pub mod ftp;

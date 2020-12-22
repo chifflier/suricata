@@ -724,6 +724,38 @@ static void RunModeInitializeLuaOutput(ConfNode *conf, OutputCtx *parent_ctx)
     }
 }
 
+static void RunModeInitializeWasmOutput(ConfNode *conf, OutputCtx *parent_ctx)
+{
+    OutputModule *wasm_module = OutputGetModuleByConfName("wasm");
+    BUG_ON(wasm_module == NULL);
+
+    ConfNode *modules = ConfNodeLookupChild(conf, "modules");
+    BUG_ON(modules == NULL); //TODO
+
+    OutputModule *m;
+    TAILQ_FOREACH(m, &parent_ctx->submodules, entries) {
+        SCLogDebug("m %p %s:%s", m, m->name, m->conf_name);
+
+        ConfNode *script = NULL;
+        TAILQ_FOREACH(script, &modules->head, next) {
+            SCLogDebug("modules %s", script->val);
+            if (strcmp(script->val, m->conf_name) == 0) {
+                break;
+            }
+        }
+        BUG_ON(script == NULL);
+
+        /* pass on parent output_ctx */
+        OutputInitResult result = m->InitSubFunc(script, parent_ctx);
+        if (!result.ok || result.ctx == NULL) {
+            continue;
+        }
+
+        AddOutputToFreeList(m, result.ctx);
+        SetupOutput(m->name, m, result.ctx);
+    }
+}
+
 /**
  * Initialize the output modules.
  */
@@ -794,6 +826,13 @@ void RunModeInitializeOutputs(void)
                     "files installed to add lua support.");
             continue;
 #endif
+        } else if (strcmp(output->val, "wasm") == 0) {
+#ifndef HAVE_WASM
+            SCLogWarning(SC_ERR_NOT_SUPPORTED,
+                    "wasm support not compiled in. Reconfigure/"
+                    "recompile with wasm support enabled.");
+            continue;
+#endif
         } else if (strcmp(output->val, "dns-log") == 0) {
             SCLogWarning(SC_ERR_NOT_SUPPORTED,
                     "dns-log is not longer available as of Suricata 5.0");
@@ -840,6 +879,12 @@ void RunModeInitializeOutputs(void)
                 if (output_ctx == NULL)
                     continue;
                 RunModeInitializeLuaOutput(output_config, output_ctx);
+                AddOutputToFreeList(module, output_ctx);
+            } else if (strcmp(output->val, "wasm") == 0) {
+                SCLogDebug("handle wasm");
+                if (output_ctx == NULL)
+                    continue;
+                RunModeInitializeWasmOutput(output_config, output_ctx);
                 AddOutputToFreeList(module, output_ctx);
             } else {
                 AddOutputToFreeList(module, output_ctx);

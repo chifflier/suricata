@@ -403,6 +403,7 @@ output-streaming.c output-streaming.h \
 output-tx.c output-tx.h \
 output-json.c output-json.h \
 output-json-common.c \
+output-wasm.c output-wasm.h \
 packet-queue.c packet-queue.h \
 pkt-var.c pkt-var.h \
 reputation.c reputation.h \
@@ -570,6 +571,8 @@ util-validate.h util-affinity.h util-affinity.c \
 util-var.c util-var.h \
 util-var-name.c util-var-name.h \
 util-vector.h \
+util-wasm-common.c util-wasm-common.h \
+util-wasm-tls.c util-wasm-tls.h \
 win32-syscall.c win32-syscall.h \
 win32-misc.c win32-misc.h \
 win32-service.c win32-service.h \

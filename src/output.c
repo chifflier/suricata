@@ -81,6 +81,7 @@
 #include "output-json-rdp.h"
 #include "output-json-http2.h"
 #include "output-lua.h"
+#include "output-wasm.h"
 #include "output-json-dnp3.h"
 #include "output-json-metadata.h"
 #include "output-json-dcerpc.h"
@@ -1041,6 +1042,7 @@ void OutputRegisterLoggers(void)
     LogCustomFormatRegister();
 
     LuaLogRegister();
+    WasmLogRegister();
     /* fast log */
     AlertFastLogRegister();
     /* debug log */

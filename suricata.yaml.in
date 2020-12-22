@@ -528,6 +528,17 @@ outputs:
       scripts:
       #   - script1.lua
 
+  # Wasm Output Support - execute wasm script to generate alert and event
+  # output.
+  # Documented at:
+  # https://suricata.readthedocs.io/en/latest/output/wasm-output.html
+  - wasm:
+      enabled: no
+      #cache-dir: /var/cache/suricata/cache
+      #modules-dir: /etc/suricata/wasm-output/
+      modules:
+      #   - module1.wasm
+
 # Logging configuration.  This is not about logging IDS alerts/events, but
 # output about what Suricata is doing, like startup messages, errors, etc.
 logging:
