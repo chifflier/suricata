@@ -70,6 +70,7 @@
 #include "output-json-smb.h"
 #include "output-json-ike.h"
 #include "output-json-krb5.h"
+#include "output-json-ldap.h"
 #include "output-json-quic.h"
 #include "output-json-dhcp.h"
 #include "output-json-snmp.h"
@@ -1102,6 +1103,8 @@ void OutputRegisterLoggers(void)
     JsonIKELogRegister();
     /* KRB5 JSON logger. */
     JsonKRB5LogRegister();
+    /* LDAP JSON logger. */
+    JsonLdapLogRegister();
     /* QUIC JSON logger. */
     JsonQuicLogRegister();
     /* DHCP JSON logger. */

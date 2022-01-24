@@ -51,6 +51,7 @@ noinst_HEADERS = \
 	app-layer-snmp.h \
 	app-layer-ssh.h \
 	app-layer-ssl.h \
+	app-layer-ldap.h \
 	app-layer-template.h \
 	app-layer-template-rust.h \
 	app-layer-tftp.h \
@@ -412,6 +413,7 @@ noinst_HEADERS = \
 	output-json-http.h \
 	output-json-ike.h \
 	output-json-krb5.h \
+	output-json-ldap.h \
 	output-json-metadata.h \
 	output-json-modbus.h \
 	output-json-quic.h \
@@ -666,6 +668,7 @@ libsuricata_c_a_SOURCES = \
 	app-layer-snmp.c \
 	app-layer-ssh.c \
 	app-layer-ssl.c \
+	app-layer-ldap.c \
 	app-layer-template.c \
 	app-layer-template-rust.c \
 	app-layer-tftp.c \
@@ -1024,6 +1027,7 @@ libsuricata_c_a_SOURCES = \
 	output-json-http.c \
 	output-json-ike.c \
 	output-json-krb5.c \
+	output-json-ldap.c \
 	output-json-metadata.c \
 	output-json-modbus.c \
 	output-json-quic.c \
