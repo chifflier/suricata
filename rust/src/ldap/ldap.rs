@@ -39,8 +39,6 @@ pub struct LDAPTransaction {
     pub bind_dn: Option<String>,
     pub bind_pwd: Option<Vec<u8>>,
     pub sasl_mech: Option<String>,
-    pub request: Option<String>,
-    pub response: Option<String>,
 
     tx_data: AppLayerTxData,
 }
@@ -55,8 +53,6 @@ impl LDAPTransaction {
             bind_dn: None,
             bind_pwd: None,
             sasl_mech: None,
-            request: None,
-            response: None,
             tx_data: AppLayerTxData::new(),
         }
     }
@@ -542,43 +538,8 @@ pub unsafe extern "C" fn rs_ldap_tx_get_alstate_progress(
     let tx = cast_pointer!(tx, LDAPTransaction);
 
     // Transaction is done if we have a response.
-    if tx.response.is_some() {
+    if tx.result_code.is_some() {
         return 1;
-    }
-    return 0;
-}
-
-/// Get the request buffer for a transaction from C.
-///
-/// No required for parsing, but an example function for retrieving a
-/// pointer to the request buffer from C for detection.
-#[no_mangle]
-pub unsafe extern "C" fn rs_ldap_get_request_buffer(
-    tx: *mut std::os::raw::c_void, buf: *mut *const u8, len: *mut u32,
-) -> u8 {
-    let tx = cast_pointer!(tx, LDAPTransaction);
-    if let Some(ref request) = tx.request {
-        if !request.is_empty() {
-            *len = request.len() as u32;
-            *buf = request.as_ptr();
-            return 1;
-        }
-    }
-    return 0;
-}
-
-/// Get the response buffer for a transaction from C.
-#[no_mangle]
-pub unsafe extern "C" fn rs_ldap_get_response_buffer(
-    tx: *mut std::os::raw::c_void, buf: *mut *const u8, len: *mut u32,
-) -> u8 {
-    let tx = cast_pointer!(tx, LDAPTransaction);
-    if let Some(ref response) = tx.response {
-        if !response.is_empty() {
-            *len = response.len() as u32;
-            *buf = response.as_ptr();
-            return 1;
-        }
     }
     return 0;
 }

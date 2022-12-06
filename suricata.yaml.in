@@ -282,9 +282,10 @@ outputs:
         - krb5
         - bittorrent-dht
         - ldap:
-          # List of LDAP operations to log
-          # default is to log all operations
-          #operations: "BindRequest, BindResponse, SearchRequest"
+            #extended: yes # enable this for extended logging information
+            # List of LDAP operations to log
+            # default is to log all operations
+            #operations: "BindRequest, BindResponse, SearchRequest"
         - snmp
         - rfb
         - sip
