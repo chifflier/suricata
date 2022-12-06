@@ -281,7 +281,10 @@ outputs:
         - dcerpc
         - krb5
         - bittorrent-dht
-        - ldap
+        - ldap:
+          # List of LDAP operations to log
+          # default is to log all operations
+          #operations: "BindRequest, BindResponse, SearchRequest"
         - snmp
         - rfb
         - sip
